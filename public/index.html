@@ -4,25 +4,110 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>CodexChat</title>
+    <meta name="description" content="A local project browser and Codex chat bridge for working across folders.">
+    <meta name="theme-color" content="#f3f0e8">
     <link rel="stylesheet" href="/styles.css">
   </head>
   <body>
-    <main class="app">
+    <a class="skip-link" href="#messages">Skip to chat</a>
+    <main id="app" class="app">
       <header class="topbar">
-        <div>
+        <button id="sidebarButton" class="sidebar-button secondary-button" type="button" aria-expanded="false" aria-controls="browserPane">
+          Files
+        </button>
+        <div class="topbar-copy">
           <h1>CodexChat</h1>
+          <p id="projectText">Project ~</p>
           <p id="statusText">Connecting...</p>
         </div>
-        <button id="stopButton" class="icon-button" type="button" title="Stop current turn" disabled>Stop</button>
+        <div class="topbar-actions">
+          <button id="modelButton" class="secondary-button" type="button">Model</button>
+          <button id="stopButton" class="icon-button" type="button" title="Stop current turn" disabled>Stop</button>
+        </div>
       </header>
 
-      <section id="approvals" class="approvals" aria-live="polite"></section>
-      <section id="messages" class="messages" aria-live="polite"></section>
+      <div id="sidebarBackdrop" class="sidebar-backdrop" hidden></div>
 
-      <form id="composer" class="composer">
-        <textarea id="prompt" rows="1" placeholder="Message Codex in this folder"></textarea>
-        <button id="sendButton" type="submit">Send</button>
-      </form>
+      <section id="browserPane" class="browser-pane" aria-label="Project browser">
+        <div class="browser-heading">
+          <div>
+            <h2>Projects</h2>
+            <p>Choose a folder under your home directory.</p>
+          </div>
+          <span id="modelPill" class="model-pill">Model: default</span>
+        </div>
+        <div class="browser-toolbar">
+          <button id="parentButton" type="button" class="secondary-button" disabled>Projects</button>
+          <div class="browser-location">
+            <span>Explorer</span>
+            <strong id="browserPath">~</strong>
+          </div>
+        </div>
+        <div class="folder-actions">
+          <button id="newFolderButton" type="button" class="secondary-button">New folder</button>
+          <button id="uploadButton" type="button" class="secondary-button">Upload</button>
+        </div>
+        <div id="browserEntries" class="browser-entries"></div>
+      </section>
+
+      <section id="emptyState" class="empty-chat" aria-label="No project selected">
+        <div>
+          <p class="empty-kicker">Workspace</p>
+          <h2>Select a project to start Codex</h2>
+          <p>Open a top-level folder from the file explorer. The chat, approvals, and composer will attach to that folder.</p>
+        </div>
+      </section>
+
+      <section id="workspaceShell" class="workspace-shell" hidden>
+        <article id="fileViewer" class="file-viewer" hidden>
+          <div id="fileTabs" class="file-tabs" role="tablist" aria-label="Open file previews"></div>
+          <div class="file-viewer-header">
+            <div>
+              <h2 id="fileTitle">File</h2>
+              <p id="fileMeta"></p>
+            </div>
+            <div class="file-actions">
+              <span id="fileStatus" class="file-status" aria-live="polite"></span>
+              <button id="saveFileButton" class="secondary-button" type="button">Save</button>
+              <button id="downloadFileButton" class="secondary-button" type="button">Download</button>
+              <button id="closeFileButton" class="secondary-button" type="button">Close</button>
+            </div>
+          </div>
+          <textarea id="fileContent" spellcheck="false" aria-label="File editor"></textarea>
+        </article>
+        <section id="chatShell" class="chat-shell" hidden>
+          <section id="approvals" class="approvals" aria-live="polite"></section>
+          <section id="messages" class="messages" aria-live="polite"></section>
+        </section>
+      </section>
+
+      <div id="composerWrap" class="composer-wrap" hidden>
+        <div id="slashMenu" class="slash-menu" hidden></div>
+        <div id="attachmentMenu" class="attachment-menu" hidden>
+          <button id="attachFileButton" type="button">File</button>
+          <button id="attachCameraButton" type="button">Camera</button>
+        </div>
+        <form id="composer" class="composer">
+          <button id="attachButton" class="attach-button" type="button" title="Attach">+</button>
+          <textarea id="prompt" rows="1" placeholder="Message Codex in this folder"></textarea>
+          <button id="sendButton" type="submit">Send</button>
+        </form>
+      </div>
+      <div id="modelSheet" class="model-sheet" hidden>
+        <div class="model-sheet-backdrop"></div>
+        <section class="model-panel" aria-label="Select model">
+          <div class="model-panel-header">
+            <div>
+              <h2>Model</h2>
+              <p id="activeModelText">Using default Codex model</p>
+            </div>
+            <button id="closeModelButton" class="secondary-button" type="button">Close</button>
+          </div>
+          <div id="modelList" class="model-list"></div>
+        </section>
+      </div>
+      <input id="fileInput" type="file" multiple hidden>
+      <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden>
     </main>
 
     <script src="/app.js" type="module"></script>
