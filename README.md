@@ -1,180 +1,297 @@
 # CodexChat
 
-CodexChat is a private local web app for controlling Codex from another device on the same network. It lets you pick a folder on this Mac, start a Codex session in that folder, chat with the agent, approve tool requests, browse files, edit small text files, upload attachments, and download files.
+> A local web interface for controlling Codex AI from any device on your network
 
-This repo is not intended to be public-facing. Treat it as a trusted LAN tool with filesystem access.
+![Platform](https://img.shields.io/badge/platform-macOS-blue)
+![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen)
+![License](https://img.shields.io/badge/license-private-red)
 
-## What It Does
+CodexChat is a private, local web application that lets you control [OpenAI Codex](https://docs.sourcegraph.com/codex) from your phone, tablet, or another computer on the same network. Browse projects, chat with Codex, approve tool requests, and edit files—all from a clean browser interface.
 
-- Opens a browser-based project explorer rooted at `CODEXCHAT_HOME`.
-- Lets you choose a folder as the active Codex workspace.
-- Starts Codex in the selected workspace when you send a message.
-- Streams messages, status, and approval prompts back to the browser.
-- Supports editable text-file tabs for files under the configured home.
-- Uploads explorer files to the visible folder.
-- Uploads chat attachments and camera screenshots to the active Codex workspace.
+**⚠️ Security Notice:** This app has no authentication. Only use on trusted private networks. See [Security](#security) for details.
+
+---
+
+## Features
+
+### 📁 File Explorer
+- Browse your home directory or a restricted `CODEXCHAT_HOME` folder
+- Create folders, upload files, and navigate with an intuitive tree view
+- Open text files in editable tabs directly in the browser
+
+### 💬 Chat Interface
+- Send messages to Codex and receive streamed responses
+- Approve or deny tool requests (read, write, execute commands) with one click
+- Support for multiple GPT models (GPT-5.5, GPT-5.4, GPT-5.4 Mini, GPT-5.3 Codex, GPT-5.2)
+- Slash commands: `/model`, `/review`, `/compact`
+
+### 📎 Attachments
+- Attach files from the explorer to your messages
+- Capture photos directly from your device camera
+- Files are uploaded to the active Codex workspace folder
+
+### 📱 Cross-Device
+- Access from any device on your local network
+- Works great with tablets and phones
+- Optional Tailscale support for remote access
+
+---
+
+## Screenshots
+
+| Active Chat | Project Drawer | Home Drawer |
+|:-----------:|:--------------:|:-----------:|
+| ![Active chat](Screenshot_20260515_103007_Brave.jpg) | ![Project drawer](Screenshot_20260515_103016_Brave.jpg) | ![Home drawer](Screenshot_20260515_103025_Brave.jpg) |
+
+| Model Picker | Chat Response |
+|:------------:|:-------------:|
+| ![Model picker](Screenshot_20260515_103031_Brave.jpg) | ![Chat response](Screenshot_20260515_110639_Brave.jpg) |
+
+---
 
 ## Requirements
 
-- macOS or another machine that can run the Codex CLI.
-- Node.js 20 or newer.
-- Codex CLI available on `PATH`.
-- Phone/tablet and Mac on the same trusted network, or connected through a private tunnel such as Tailscale.
+| Requirement | Version | Notes |
+|-------------|---------|-------|
+| **Node.js** | ≥ 20 | Required to run the server |
+| **Codex CLI** | Latest | Must be installed and on PATH |
+| **macOS** | Any | Primary platform; other Unix-like OSes may work |
+| **Network** | Local Wi-Fi or Tailscale | For cross-device access |
+
+### Codex Installation
+
+```bash
+# Install Codex CLI (from OpenAI)
+npm install -g @openai/codex
+
+# Verify installation
+codex --version
+```
+
+---
 
 ## Quick Start
 
-From this repo:
+### 1. Clone and Install
 
-```sh
+```bash
+cd /Users/sajinbabus/codexchat
+npm install
+```
+
+### 2. Start the Server
+
+```bash
 npm run dev
 ```
 
-The server prints URLs like:
+The server will print URLs for local and network access:
 
-```text
-Mac:   http://localhost:8787
-Phone: http://192.168.1.25:8787
+```
+┌─────────────────────────────────────────────────┐
+│  CodexChat is running!                          │
+│                                                 │
+│  Mac:      http://localhost:8787               │
+│  Network:  http://192.168.1.25:8787              │
+│                                                 │
+│  Press Ctrl+C to stop                            │
+└─────────────────────────────────────────────────┘
 ```
 
-Use `localhost` only on the Mac. From a phone, use the printed `Phone:` URL.
+### 3. Connect
 
-## Run Options
+- **On your Mac:** Open `http://localhost:8787`
+- **On another device:** Open the `Network:` URL shown above
 
-By default, CodexChat can browse your home directory:
+### 4. Start Chatting
 
-```sh
-npm run dev
-```
+1. Select a project folder in the left sidebar
+2. Type a message and send it
+3. Approve any tool requests that appear
 
-To restrict file access to one folder:
+---
 
-```sh
+## Configuration
+
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `CODEXCHAT_HOME` | `~` | Root folder for file browsing |
+| `PORT` | `8787` | Server port |
+| `HOST` | `0.0.0.0` | Bind address (`127.0.0.1` for Mac-only) |
+| `CODEXCHAT_FILE_PREVIEW_LIMIT` | `1048576` (1MB) | Max file size for browser editing |
+| `CODEXCHAT_UPLOAD_LIMIT` | `52428800` (50MB) | Max upload size |
+| `CODEX_HOME` | `~/.codex` | Codex configuration directory |
+
+### Examples
+
+```bash
+# Restrict to a specific project folder
 CODEXCHAT_HOME=/Users/you/projects npm run dev
-```
 
-To run on a specific port:
-
-```sh
+# Use a different port
 PORT=8794 npm run dev
-```
 
-To bind only to the Mac instead of the network:
-
-```sh
+# Mac-only access (no network)
 HOST=127.0.0.1 npm run dev
+
+# Combined example
+CODEXCHAT_HOME=/Users/you/work PORT=9000 npm run dev
 ```
 
-By default the app binds to `0.0.0.0` so another device on the same private network can connect.
+---
 
-## Phone Setup
+## Remote Access with Tailscale
 
-1. Start the server on the Mac:
+When your devices aren't on the same Wi-Fi, use [Tailscale](https://tailscale.com/):
 
-   ```sh
+1. **Install Tailscale** on both your Mac and phone/tablet
+2. **Sign in** to the same Tailscale account on both devices
+3. **Start CodexChat:**
+   ```bash
    npm run dev
    ```
-
-2. Keep the terminal running.
-3. Open the printed `Phone:` URL from your phone browser.
-4. Pick a project folder in the left explorer.
-5. Send a message to start Codex in that folder.
-
-If the phone cannot connect:
-
-- Confirm the Mac and phone are on the same Wi-Fi.
-- Confirm the server was started with `HOST=0.0.0.0` or without a `HOST` override.
-- Confirm macOS firewall allows incoming connections for Node.
-- Try the Tailscale URL if both devices are signed in to Tailscale.
-
-## Tailscale Access
-
-Use this when the phone and Mac are not on the same Wi-Fi.
-
-1. Install and sign in to Tailscale on both devices.
-2. Start CodexChat:
-
-   ```sh
-   npm run dev
-   ```
-
-3. Get the Mac Tailscale IP:
-
-   ```sh
+4. **Get your Mac's Tailscale IP:**
+   ```bash
    tailscale ip -4
    ```
-
-4. Open:
-
-   ```text
-   http://<mac-tailscale-ip>:8787
+5. **Open from your other device:**
+   ```
+   http://<your-mac-tailscale-ip>:8787
    ```
 
-## File Behavior
+---
 
-CodexChat separates explorer actions from chat attachment actions:
+## File Management
 
-- Explorer `Upload` writes to the folder currently shown in the file explorer.
-- Composer `File` and `Camera` attachments write to the active Codex project folder.
-- Text files under `CODEXCHAT_FILE_PREVIEW_LIMIT` can be opened in editable tabs.
-- Binary files and files over the preview limit are not editable in the browser.
-- Downloads use the active file tab.
+### Two Upload Destinations
 
-Useful limits:
+| Action | Destination | Usage |
+|--------|-------------|-------|
+| **Explorer Upload** | Currently shown folder | Add files to the browser's visible directory |
+| **Chat Attachment** | Active Codex project | Include files in your message to Codex |
 
-```sh
-CODEXCHAT_FILE_PREVIEW_LIMIT=1048576
-CODEXCHAT_UPLOAD_LIMIT=52428800
+### In-Browser Editing
+
+- Text files under 1MB can be opened and edited directly
+- Binary files and large files are view-only
+- Save changes with the `Save` button
+- Download files using the `Download` button
+
+### File Size Limits
+
+```bash
+# Edit text files up to 2MB
+CODEXCHAT_FILE_PREVIEW_LIMIT=2097152 npm run dev
+
+# Upload files up to 100MB
+CODEXCHAT_UPLOAD_LIMIT=104857600 npm run dev
 ```
 
-## Security Notes
+---
 
-This app has no login screen. Anyone who can reach it on the network can browse, upload, download, edit files under `CODEXCHAT_HOME`, and send work to Codex.
+## Security
 
-Do not expose CodexChat to the public internet.
+> **⚠️ Important:** This application has no authentication. Anyone who can reach it on your network can browse, upload, download, edit files, and interact with Codex.
 
-Safer operating modes:
+### Recommendations
 
-- Restrict `CODEXCHAT_HOME` to a project folder.
-- Use a trusted private Wi-Fi network.
-- Use Tailscale instead of opening router ports.
-- Use `HOST=127.0.0.1` when you only need access from the Mac.
+1. **Use on private networks only** — Never expose to the public internet
+2. **Restrict file access** — Set `CODEXCHAT_HOME` to limit browsing scope
+3. **Prefer Tailscale** — Provides encrypted access without opening router ports
+4. **Use localhost when alone** — Set `HOST=127.0.0.1` for single-device use
+
+### Trusted Network Checklist
+
+- [ ] Mac and phone/tablet on same trusted Wi-Fi
+- [ ] macOS firewall allows Node.js incoming connections
+- [ ] No exposed ports on router (or use Tailscale)
+
+---
 
 ## Troubleshooting
 
-Check whether the server is healthy:
+### Server Won't Start
 
-```sh
-curl http://localhost:8787/api/health
+```bash
+# Check if port is in use
+lsof -i :8787
+
+# Try a different port
+PORT=8788 npm run dev
 ```
 
-If the browser opens but Codex does not respond:
+### Browser Can't Connect
 
-- Confirm `codex` works in a normal terminal.
-- Select a project folder before sending a prompt.
-- Refresh the page after restarting the server.
+```bash
+# Verify server is running
+curl http://localhost:8787/api/health
 
-If uploads go to the wrong place:
+# Check if it's listening on all interfaces
+curl http://127.0.0.1:8787/api/health
+```
 
-- Use explorer `Upload` for the selected explorer folder.
-- Use composer `File` or `Camera` for the active Codex project folder.
+### Codex Not Responding
 
-If phone access fails:
+1. Confirm Codex works in Terminal:
+   ```bash
+   codex --version
+   ```
+2. Select a project folder before sending a message
+3. Refresh the page after restarting the server
 
-- Do not use `localhost` on the phone.
-- Use the printed `Phone:` URL.
-- Make sure the app is listening on `0.0.0.0`.
+### Wrong Upload Location
 
-## Development Checks
+- Use **Explorer → Upload** for the currently browsed folder
+- Use **Composer → + → File/Camera** for the active Codex project
 
-Run syntax checks:
+### Syntax Check
 
-```sh
+```bash
 node --check public/app.js
 node --check src/server.js
 ```
 
-Run the app:
+---
 
-```sh
-npm run dev
+## Architecture
+
 ```
+codexchat/
+├── public/
+│   ├── index.html     # Main HTML structure
+│   ├── app.js         # Frontend application
+│   └── styles.css     # Styling
+├── src/
+│   └── server.js      # Node.js server (Express-like)
+├── package.json
+└── README.md
+```
+
+### Key Components
+
+- **server.js** — HTTP server, file operations, Codex process spawning, API endpoints
+- **app.js** — UI state management, SSE connection, DOM manipulation
+- **styles.css** — Custom styling with warm paper tones
+
+---
+
+## Development
+
+```bash
+# Run development server
+npm run dev
+
+# Run production server
+npm start
+
+# Syntax check
+node --check public/app.js && node --check src/server.js
+```
+
+---
+
+## License
+
+Private and internal use only. Not intended for public distribution.
